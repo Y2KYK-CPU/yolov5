@@ -1,0 +1,18 @@
+# Ultralytics 🚀 AGPL-3.0 License - https://ultralytics.com/license
+# Dataset configuration for 2-class 13-keypoint pose detection
+# Classes: elderly_fall (0), baby_climb (1)
+# Label format per row: cls cx cy w h  k0x k0y k0v  k1x k1y k1v  ...  k12x k12y k12v
+# Total columns: 5 + 3*13 = 44
+
+path: ../datasets/pose13  # dataset root dir
+train: images/train       # train images (relative to 'path')
+val: images/val           # val images (relative to 'path')
+
+# Classes
+nc: 2
+names:
+  0: elderly_fall
+  1: baby_climb
+
+# Keypoint shape: (nkpt, ndim) – 13 keypoints × (x, y, v)
+kpt_shape: [13, 3]
