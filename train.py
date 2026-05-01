@@ -1,17 +1,18 @@
 # Ultralytics 🚀 AGPL-3.0 License - https://ultralytics.com/license
 """
-Train a YOLOv5 model on a custom dataset. Models and datasets download automatically from the latest YOLOv5 release.
+在自定义数据集上训练 YOLOv5 模型。模型和数据集会从最新的 YOLOv5 发布版本自动下载。
 
-Usage - Single-GPU training:
-    $ python train.py --data coco128.yaml --weights yolov5s.pt --img 640  # from pretrained (recommended)
-    $ python train.py --data coco128.yaml --weights '' --cfg yolov5s.yaml --img 640  # from scratch
+使用示例 - 单 GPU 训练：
+    $ python train.py --data coco128.yaml --weights yolov5s.pt --img 640  # 从预训练模型开始（推荐）
+    $ python train.py --data coco128.yaml --weights '' --cfg yolov5s.yaml --img 640  # 从头开始训练
 
-Usage - Multi-GPU DDP training:
+使用示例 - 多 GPU DDP 训练：
     $ python -m torch.distributed.run --nproc_per_node 4 --master_port 1 train.py --data coco128.yaml --weights yolov5s.pt --img 640 --device 0,1,2,3
 
-Models:     https://github.com/ultralytics/yolov5/tree/master/models
-Datasets:   https://github.com/ultralytics/yolov5/tree/master/data
-Tutorial:   https://docs.ultralytics.com/yolov5/tutorials/train_custom_data
+相关资源：
+    模型：   https://github.com/ultralytics/yolov5/tree/master/models
+    数据集：  https://github.com/ultralytics/yolov5/tree/master/data
+    教程：   https://docs.ultralytics.com/yolov5/tutorials/train_custom_data
 """
 
 import argparse

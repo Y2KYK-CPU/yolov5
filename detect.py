@@ -1,26 +1,26 @@
 # Ultralytics 🚀 AGPL-3.0 License - https://ultralytics.com/license
 """
-Run YOLOv5 detection inference on images, videos, directories, globs, YouTube, webcam, streams, etc.
+对图像、视频、目录、glob、YouTube、摄像头、流媒体等运行 YOLOv5 目标检测推理。
 
-Usage - sources:
-    $ python detect.py --weights yolov5s.pt --source 0                               # webcam
-                                                     img.jpg                         # image
-                                                     vid.mp4                         # video
-                                                     screen                          # screenshot
-                                                     path/                           # directory
-                                                     list.txt                        # list of images
-                                                     list.streams                    # list of streams
-                                                     'path/*.jpg'                    # glob
-                                                     'https://youtu.be/LNwODJXcvt4'  # YouTube
-                                                     'rtsp://example.com/media.mp4'  # RTSP, RTMP, HTTP stream
+使用示例 - 输入来源：
+    $ python detect.py --weights yolov5s.pt --source 0                               # 摄像头
+                                                     img.jpg                         # 图像文件
+                                                     vid.mp4                         # 视频文件
+                                                     screen                          # 屏幕截图
+                                                     path/                           # 目录
+                                                     list.txt                        # 图像路径列表
+                                                     list.streams                    # 流媒体列表
+                                                     'path/*.jpg'                    # glob 匹配
+                                                     'https://youtu.be/LNwODJXcvt4'  # YouTube 视频
+                                                     'rtsp://example.com/media.mp4'  # RTSP/RTMP/HTTP 流
 
-Usage - formats:
+使用示例 - 模型格式：
     $ python detect.py --weights yolov5s.pt                 # PyTorch
                                  yolov5s.torchscript        # TorchScript
-                                 yolov5s.onnx               # ONNX Runtime or OpenCV DNN with --dnn
+                                 yolov5s.onnx               # ONNX Runtime 或 OpenCV DNN（加 --dnn）
                                  yolov5s_openvino_model     # OpenVINO
                                  yolov5s.engine             # TensorRT
-                                 yolov5s.mlpackage          # CoreML (macOS-only)
+                                 yolov5s.mlpackage          # CoreML（仅 macOS）
                                  yolov5s_saved_model        # TensorFlow SavedModel
                                  yolov5s.pb                 # TensorFlow GraphDef
                                  yolov5s.tflite             # TensorFlow Lite

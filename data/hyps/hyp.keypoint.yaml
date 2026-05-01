@@ -1,0 +1,46 @@
+# Ultralytics 🚀 AGPL-3.0 License - https://ultralytics.com/license
+
+# YOLOv5 人体关键点检测（姿态估计）超参数配置
+# 基于 hyp.scratch-low.yaml 增加关键点损失权重参数
+# 使用示例：python train.py --data coco-pose.yaml --cfg yolov5s-pose.yaml --hyp hyp.keypoint.yaml
+
+# ——— 学习率 ———
+lr0: 0.01           # 初始学习率（SGD=1E-2, Adam=1E-3）
+lrf: 0.01           # 最终学习率 = lr0 * lrf
+momentum: 0.937     # SGD 动量 / Adam beta1
+weight_decay: 0.0005  # 权重衰减系数
+
+# ——— 损失权重 ———
+box: 0.05           # 边界框坐标损失权重
+cls: 0.5            # 分类损失权重
+cls_pw: 1.0         # 分类损失正样本权重（BCEWithLogitsLoss 的 pos_weight）
+obj: 1.0            # 目标置信度损失权重（按像素缩放）
+obj_pw: 1.0         # 目标损失正样本权重
+
+# ——— 关键点损失权重（人体关键点检测专用）———
+kpt: 0.1            # 关键点坐标损失权重（仅对 visibility=2 的关键点计算）
+kptv: 0.1           # 关键点可见性损失权重（BCE 损失）
+
+# ——— 锚框 ———
+anchor_t: 4.0       # 锚框匹配的宽高比阈值
+
+# ——— 标签平滑 ———
+label_smoothing: 0.0  # 标签平滑系数（0=关闭）
+
+# ——— Focal Loss ———
+fl_gamma: 0.0       # Focal Loss 的 gamma 参数（0=关闭 Focal Loss）
+
+# ——— 数据增强 ———
+hsv_h: 0.015        # HSV 色调增强（比例）
+hsv_s: 0.7          # HSV 饱和度增强（比例）
+hsv_v: 0.4          # HSV 亮度增强（比例）
+degrees: 0.0        # 随机旋转（度）
+translate: 0.1      # 随机平移（比例）
+scale: 0.5          # 随机缩放（增益）
+shear: 0.0          # 随机剪切（度）
+perspective: 0.0    # 随机透视变换（0-0.001）
+flipud: 0.0         # 上下翻转概率
+fliplr: 0.5         # 左右翻转概率
+mosaic: 1.0         # Mosaic 数据增强概率
+mixup: 0.0          # MixUp 数据增强概率
+copy_paste: 0.0     # 复制-粘贴增强概率（用于分割）

@@ -1,0 +1,71 @@
+# Ultralytics 🚀 AGPL-3.0 License - https://ultralytics.com/license
+
+# COCO 2017 人体关键点数据集配置
+# 官方网站：http://cocodataset.org
+# 使用示例：python train.py --data coco-pose.yaml --weights yolov5s-pose.pt --img 640
+# 标签转换：python utils/coco2yolo_keypoints.py --json person_keypoints_train2017.json --output labels/train2017
+#
+# 数据集目录结构（父目录）：
+# ├── yolov5
+# └── datasets
+#     └── coco-pose        ← 数据集下载至此（约 20GB）
+#         ├── images
+#         │   ├── train2017/
+#         │   └── val2017/
+#         └── labels
+#             ├── train2017/
+#             └── val2017/
+
+# 训练/验证/测试集路径：可以是目录、文件列表(.txt)或列表
+path: ../datasets/coco-pose  # 数据集根目录
+train: images/train2017      # 训练集图像目录（118,287 张图像）
+val: images/val2017          # 验证集图像目录（5,000 张图像）
+
+# COCO 17 个人体关键点定义（kpt_shape: [关键点数, 3(x,y,visibility)]）
+kpt_shape: [17, 3]
+
+# 关键点名称（按 COCO 标准顺序）
+keypoint_names:
+  0: 鼻子 (nose)
+  1: 左眼 (left_eye)
+  2: 右眼 (right_eye)
+  3: 左耳 (left_ear)
+  4: 右耳 (right_ear)
+  5: 左肩 (left_shoulder)
+  6: 右肩 (right_shoulder)
+  7: 左肘 (left_elbow)
+  8: 右肘 (right_elbow)
+  9: 左腕 (left_wrist)
+  10: 右腕 (right_wrist)
+  11: 左髋 (left_hip)
+  12: 右髋 (right_hip)
+  13: 左膝 (left_knee)
+  14: 右膝 (right_knee)
+  15: 左踝 (left_ankle)
+  16: 右踝 (right_ankle)
+
+# 骨架连接关系（用于可视化，0-indexed，基于 COCO 标准）
+skeleton:
+  [[15, 13], [13, 11], [16, 14], [14, 12], [11, 12],
+   [5, 11], [6, 12], [5, 6], [5, 7], [6, 8],
+   [7, 9], [8, 10], [1, 2], [0, 1], [0, 2],
+   [1, 3], [2, 4], [3, 5], [4, 6]]
+
+# 类别（仅包含人）
+names:
+  0: person
+
+# 下载脚本（可选）
+download: |
+  from utils.general import download, Path
+
+  # 下载标注文件
+  dir = Path(yaml['path'])
+  url = 'http://images.cocodataset.org/annotations/'
+  urls = [url + 'annotations_trainval2017.zip']  # 包含 person_keypoints_train2017.json
+  download(urls, dir=dir / 'annotations')
+
+  # 下载图像
+  urls = ['http://images.cocodataset.org/zips/train2017.zip',   # 19GB, 118k 张图像
+          'http://images.cocodataset.org/zips/val2017.zip']     # 1GB,  5k 张图像
+  download(urls, dir=dir / 'images', threads=2)
