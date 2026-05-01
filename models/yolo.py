@@ -127,6 +127,40 @@ class Detect(nn.Module):
         return grid, anchor_grid
 
 
+class Pose(Detect):
+    """YOLOv5 Pose head for keypoint detection, extending Detect with per-anchor keypoint outputs (x, y, v)."""
+
+    def __init__(self, nc=80, anchors=(), nkpt=13, ch=(), inplace=True):
+        """Initializes YOLOv5 Pose head with keypoint outputs; nkpt keypoints each with (x, y, visibility)."""
+        super().__init__(nc, anchors, ch, inplace)
+        self.nkpt = nkpt  # number of keypoints
+        self.no_kpt = 3 * nkpt  # keypoint outputs per anchor: (x, y, v) * K
+        self.no = nc + 5 + self.no_kpt  # total outputs per anchor
+        self.m = nn.ModuleList(nn.Conv2d(x, self.no * self.na, 1) for x in ch)  # output conv
+
+    def forward(self, x):
+        """Processes input through YOLOv5 Pose layers, outputting bbox + keypoints for each anchor."""
+        z = []  # inference output
+        for i in range(self.nl):
+            x[i] = self.m[i](x[i])  # conv
+            bs, _, ny, nx = x[i].shape  # x(bs,255,20,20) to x(bs,3,20,20,no)
+            x[i] = x[i].view(bs, self.na, self.no, ny, nx).permute(0, 1, 3, 4, 2).contiguous()
+
+            if not self.training:  # inference
+                if self.dynamic or self.grid[i].shape[2:4] != x[i].shape[2:4]:
+                    self.grid[i], self.anchor_grid[i] = self._make_grid(nx, ny, i)
+
+                xy, wh, conf, kpt = x[i].split((2, 2, self.nc + 1, self.no_kpt), 4)
+                xy = (xy.sigmoid() * 2 + self.grid[i]) * self.stride[i]  # xy absolute pixel
+                wh = (wh.sigmoid() * 2) ** 2 * self.anchor_grid[i]  # wh absolute pixel
+                # kpt: sigmoid x,y (relative-to-bbox 0-1) and visibility v (0-1)
+                kpt = kpt.sigmoid()
+                y = torch.cat((xy, wh, conf.sigmoid(), kpt), 4)
+                z.append(y.view(bs, self.na * nx * ny, self.no))
+
+        return x if self.training else (torch.cat(z, 1),) if self.export else (torch.cat(z, 1), x)
+
+
 class Segment(Detect):
     """YOLOv5 Segment head for segmentation models, extending Detect with mask and prototype layers."""
 
@@ -207,7 +241,7 @@ class BaseModel(nn.Module):
         """
         self = super()._apply(fn)
         m = self.model[-1]  # Detect()
-        if isinstance(m, (Detect, Segment)):
+        if isinstance(m, (Detect, Segment, Pose)):
             m.stride = fn(m.stride)
             m.grid = list(map(fn, m.grid))
             if isinstance(m.anchor_grid, list):
@@ -244,7 +278,7 @@ class DetectionModel(BaseModel):
 
         # Build strides, anchors
         m = self.model[-1]  # Detect()
-        if isinstance(m, (Detect, Segment)):
+        if isinstance(m, (Detect, Segment, Pose)):
 
             def _forward(x):
                 """Passes the input 'x' through the model and returns the processed output."""
@@ -435,7 +469,7 @@ def parse_model(d, ch):
         elif m is Concat:
             c2 = sum(ch[x] for x in f)
         # TODO: channel, gw, gd
-        elif m in {Detect, Segment}:
+        elif m in {Detect, Segment, Pose}:
             args.append([ch[x] for x in f])
             if isinstance(args[1], int):  # number of anchors
                 args[1] = [list(range(args[1] * 2))] * len(f)

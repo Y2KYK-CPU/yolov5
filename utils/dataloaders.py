@@ -1146,15 +1146,37 @@ def verify_image_label(args):
             nf = 1  # label found
             with open(lb_file) as f:
                 lb = [x.split() for x in f.read().strip().splitlines() if len(x)]
-                if any(len(x) > 6 for x in lb):  # is segment
+                if any(len(x) > 6 for x in lb):  # is segment or keypoints
                     classes = np.array([x[0] for x in lb], dtype=np.float32)
-                    segments = [np.array(x[1:], dtype=np.float32).reshape(-1, 2) for x in lb]  # (cls, xy1...)
-                    lb = np.concatenate((classes.reshape(-1, 1), segments2boxes(segments)), 1)  # (cls, xywh)
+                    # Keypoint labels: 5 + 3*K columns (e.g., 44 for K=13)
+                    # Segment labels: variable number of xy pairs (always even after cls)
+                    first_len = len(lb[0]) if lb else 0
+                    nkpt_cols = first_len - 5  # columns after cls+bbox
+                    is_kpt = nkpt_cols > 0 and nkpt_cols % 3 == 0  # (x,y,v) triplets
+                    if is_kpt:
+                        lb = np.array(lb, dtype=np.float32)  # keep full keypoint label
+                        segments = []
+                    else:
+                        segments = [np.array(x[1:], dtype=np.float32).reshape(-1, 2) for x in lb]  # (cls, xy1...)
+                        lb = np.concatenate((classes.reshape(-1, 1), segments2boxes(segments)), 1)  # (cls, xywh)
                 lb = np.array(lb, dtype=np.float32)
             if nl := len(lb):
-                assert lb.shape[1] == 5, f"labels require 5 columns, {lb.shape[1]} columns detected"
-                assert (lb >= 0).all(), f"negative label values {lb[lb < 0]}"
-                assert (lb[:, 1:] <= 1).all(), f"non-normalized or out of bounds coordinates {lb[:, 1:][lb[:, 1:] > 1]}"
+                ncols = lb.shape[1]
+                nkpt_cols = ncols - 5
+                is_kpt_label = nkpt_cols > 0 and nkpt_cols % 3 == 0
+                if is_kpt_label:
+                    assert ncols == 5 + nkpt_cols, f"keypoint labels require 5+3K columns, {ncols} detected"
+                    assert (lb[:, :5] >= 0).all(), f"negative label values {lb[lb[:, :5] < 0]}"
+                    assert (lb[:, 1:5] <= 1).all(), f"non-normalized bbox {lb[:, 1:5][lb[:, 1:5] > 1]}"
+                    # kpt xy should be in [0,1]; v should be 0 or 1
+                    kpt_xy = lb[:, 5::3]  # x columns
+                    kpt_y_cols = lb[:, 6::3]  # y columns
+                    assert (kpt_xy >= 0).all() and (kpt_xy <= 1).all(), "kpt x out of [0,1]"
+                    assert (kpt_y_cols >= 0).all() and (kpt_y_cols <= 1).all(), "kpt y out of [0,1]"
+                else:
+                    assert ncols == 5, f"labels require 5 columns, {ncols} columns detected"
+                    assert (lb >= 0).all(), f"negative label values {lb[lb < 0]}"
+                    assert (lb[:, 1:] <= 1).all(), f"non-normalized or out of bounds coordinates {lb[:, 1:][lb[:, 1:] > 1]}"
                 _, i = np.unique(lb, axis=0, return_index=True)
                 if len(i) < nl:  # duplicate row check
                     lb = lb[i]  # remove duplicates

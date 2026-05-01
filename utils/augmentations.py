@@ -154,7 +154,7 @@ def random_perspective(
     im, targets=(), segments=(), degrees=10, translate=0.1, scale=0.1, shear=10, perspective=0.0, border=(0, 0)
 ):
     # torchvision.transforms.RandomAffine(degrees=(-10, 10), translate=(0.1, 0.1), scale=(0.9, 1.1), shear=(-10, 10))
-    # targets = [cls, xyxy]
+    # targets = [cls, xyxy] or [cls, xyxy, kx1, ky1, kv1, ...] when keypoints present (absolute pixel coords)
     """Applies random perspective transformation to an image, modifying the image and corresponding labels."""
     height = im.shape[0] + border[0] * 2  # shape(h,w,c)
     width = im.shape[1] + border[1] * 2
@@ -195,6 +195,9 @@ def random_perspective(
         else:  # affine
             im = cv2.warpAffine(im, M[:2], dsize=(width, height), borderValue=(114, 114, 114))
 
+    # Detect whether targets carry keypoints (cols 5+: kx, ky, v, ...)
+    nkpt = (targets.shape[1] - 5) // 3 if len(targets) and targets.shape[1] > 5 else 0
+
     if n := len(targets):
         use_segments = any(x.any() for x in segments) and len(segments) == n
         new = np.zeros((n, 4))
@@ -224,10 +227,23 @@ def random_perspective(
             new[:, [0, 2]] = new[:, [0, 2]].clip(0, width)
             new[:, [1, 3]] = new[:, [1, 3]].clip(0, height)
 
+        # Warp keypoints if present (absolute pixel coords, v > 0 only)
+        new_kpt = None
+        if nkpt:
+            kpt_cols = targets[:, 5:].reshape(n, nkpt, 3).copy()  # (n, K, 3)
+            kxy_h = np.ones((n * nkpt, 3))  # homogeneous coords
+            kxy_h[:, :2] = kpt_cols[:, :, :2].reshape(n * nkpt, 2)
+            kxy_h = kxy_h @ M.T
+            kxy_h = (kxy_h[:, :2] / kxy_h[:, 2:3] if perspective else kxy_h[:, :2]).reshape(n, nkpt, 2)
+            kpt_cols[:, :, :2] = kxy_h
+            new_kpt = kpt_cols  # (n, K, 3)
+
         # filter candidates
         i = box_candidates(box1=targets[:, 1:5].T * s, box2=new.T, area_thr=0.01 if use_segments else 0.10)
         targets = targets[i]
         targets[:, 1:5] = new[i]
+        if nkpt and new_kpt is not None:
+            targets[:, 5:] = new_kpt[i].reshape(-1, nkpt * 3)
 
     return im, targets
 
